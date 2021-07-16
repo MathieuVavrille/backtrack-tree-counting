@@ -49,6 +49,8 @@ public class NaryRandomVarDom extends AbstractStrategy<IntVar> {
     for (IntVar v: vars)
       if (!v.isInstantiated())
         uninstantiatedVars.add(v);
+    if (uninstantiatedVars.size() == 0)
+      return null;
     return computeDecision(uninstantiatedVars.get(random.nextInt(uninstantiatedVars.size())));
   }
 
