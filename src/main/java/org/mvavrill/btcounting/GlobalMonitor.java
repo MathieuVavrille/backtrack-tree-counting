@@ -8,87 +8,99 @@ import org.chocosolver.solver.search.limits.FailCounter;
 import org.chocosolver.solver.search.restart.MonotonicRestartStrategy;
 import org.chocosolver.solver.variables.IntVar;
 
+import java.util.Random;
 
 
-class GlobalMonitor implements IMonitorDownBranch, IMonitorUpBranch, IMonitorRestart, IMonitorSolution, IMonitorContradiction {
+class GlobalMonitor implements IMonitorDownBranch, IMonitorUpBranch, IMonitorRestart, IMonitorSolution, IMonitorContradiction, IMonitorInitialize, IMonitorOpenNode {
 
   private final Solver solver;
-  private Node rootNode;
+  private final Node rootNode;
   private Node currentNode;
   private final IntVar[] vars;
-  private long currentBudget = 2;
+  private final Random random;
   
   
-  public GlobalMonitor(final Solver solver, final IntVar[] vars, final int budget) {
+  public GlobalMonitor(final Solver solver, final IntVar[] vars, final int budget, final Random random) {
     this.solver = solver;
+    currentNode = rootNode = new Node(null);
+    this.vars = vars;
+    this.random = random;
     solver.plugMonitor(this);
     solver.setRestarts(new BudgetCounter(solver.getModel(), budget), new MonotonicRestartStrategy(budget), Integer.MAX_VALUE);
-    rootNode = new Node(null);
-    currentNode = rootNode;
-    this.vars = vars;
-    solver.addStopCriterion( ()-> rootNode.size == rootNode.nbFails + rootNode.nbSolutions || solver.getSolutionCount() + solver.getFailCount() > 100);
+    solver.setSearch(new RolloutStrategy(this));
+    solver.addStopCriterion( ()-> rootNode.unsearchedSpace == 0 || solver.getSolutionCount() + solver.getFailCount() > 100);
+  }
+
+  public void goToChild(final int i) {
+    currentNode = currentNode.goToChild(i);
   }
 
   @Override
-  public void beforeUpBranch() {}
+  public void beforeOpenNode() {
+    System.out.println("OpenNode");
+    if (currentNode.var == null)
+      currentNode.initBranch(vars);
+  }
 
   @Override
   public void afterUpBranch() {
-    currentNode = currentNode.parent();
-  }
-
-  @Override
-  public void beforeDownBranch(final boolean left) {
-    if (left)
-      currentNode = currentNode.left();
-    else
-      currentNode = currentNode.right();
+    System.out.println("afterUpBranch");
+    currentNode = currentNode.goToParent();
   }
 
   @Override
   public void afterDownBranch(final boolean left) {
-    if (currentNode.size == -1) {
-      currentNode.size = spaceSize();
-      
+    System.out.println("afterDownBranch");
+    if (!currentNode.isInitialized()) {
+      currentNode.print();
+      currentNode.init(vars);
     }
   }
 
+  @Override
+  public void afterInitialize(final boolean correct) {
+    System.out.println("afterInitialize");
+    afterDownBranch(true);
+  }
 
   @Override
-  public void beforeRestart() {}
-
-  @Override
-  public void afterRestart() {
-    currentNode = rootNode;
+  public void afterRestart() { // Goes back to top, by calling goToParent (which will compute unsearched spaces and number of solutions)
+    System.out.println("afterRestart");
+    boolean isFinished = false;
+    while (!isFinished) {
+      Node parentNode = currentNode.goToParent();
+      if (parentNode == null)
+        isFinished = true;
+      else
+        currentNode = parentNode;
+    }
+    rootNode.print();
+    System.out.println(currentNode);
+    System.out.println("\n\n");
   }
 
   @Override
   public void onSolution() {
-    System.out.println("Solution found");
-    for (IntVar v : vars) {
-      System.out.print(v);
-      System.out.print(" ");
-    }
-    System.out.println("");
+    System.out.println("onSolution");
+    currentNode.initSolution();
   }
 
   @Override
   public void onContradiction(ContradictionException ex) {
-    currentNode.size = 0;
+    System.out.println("onContradiction");
+    currentNode.initContradiction();
   }
 
-  private long spaceSize() {
-    long s = 1;
-    for (IntVar v: vars)
-      s *= v.getDomainSize();
-    return s;
+  public IntVar[] getVars() {
+    return vars;
+  }
+  
+  public Random getRandom() {
+    return random;
   }
 
-  public IntVar varSplit() {
-    for (IntVar v: vars) {
-      if (!v.isInstantiated())
-        return v;
-    }
-    throw new IllegalStateException("All the variables are instantiated");
+  public Node getCurrentNode() {
+    return currentNode;
   }
+  
 }

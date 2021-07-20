@@ -13,13 +13,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Random;
 
-/**
- * Class to perform branching decisions over integer variables
- * <br/>
- *
- * @author Charles Prud'homme, Jean-Guillaume Fages
- * @since 2 juil. 2010
- */
 public class NaryRandomVarDom extends AbstractStrategy<IntVar> {
 
   private final Random random;

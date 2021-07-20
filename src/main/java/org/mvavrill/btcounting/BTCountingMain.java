@@ -16,8 +16,8 @@ public class BTCountingMain {
     Model model = nqueens.getValue0();
     IntVar[] vars = nqueens.getValue1();
     Solver solver = model.getSolver();
-    solver.setSearch(new NaryRandomVarDom(vars, random));
-    //GlobalMonitor mon = new GlobalMonitor(solver, vars, 2);
+    //solver.setSearch(new NaryRandomVarDom(vars, random));
+    GlobalMonitor monitor = new GlobalMonitor(solver, vars, 2, random);
     int i = 0;
     while (solver.solve()) {
       System.out.println(i++);

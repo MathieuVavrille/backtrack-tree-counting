@@ -8,31 +8,33 @@ import org.chocosolver.solver.variables.IntVar;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
-public class NaryIntDecision extends Decision<IntVar> {
-
-  //private static final long serialVersionUID = 4319290465131546449L;
+public class RolloutDecision extends Decision<IntVar> {
  
-  /**
-   * The array of decision values
-   */
+  // The array of decision indices
+  private IntVar var;
   private int[] values;
+  private final GlobalMonitor monitor;
+  private final Node node;
 
-  public NaryIntDecision(final IntVar var, final int[] values) {
-    super(values.length);
-    this.var = var;
-    this.values = values;
+  public RolloutDecision(final GlobalMonitor monitor) {
+    super(monitor.getCurrentNode().getNbSearchedNodes());
+    this.monitor = monitor;
+    this.node = monitor.getCurrentNode();
+    this.var = this.node.var;
   }
 
   @Override
-  public int[] getDecisionValue() {
-    return values;
+  public Object getDecisionValue() {
+    return null;
   }
 
   @Override
   public void apply() throws ContradictionException {
     if (branch >= 1) {
-      var.getModel().getSolver().getEventObserver().pushDecisionLevel();
-      var.instantiateTo(values[branch-1], this);
+      int idToBranchOn = node.getIdToBranchOn();
+      var.instantiateTo(node.varDomain[idToBranchOn], this);
+      System.out.println("branch " + branch + " " + var + "=" + node.varDomain[idToBranchOn]);
+      monitor.goToChild(idToBranchOn);
     }
   }
 
@@ -41,7 +43,7 @@ public class NaryIntDecision extends Decision<IntVar> {
 
   @Override
   public String toString() {
-    return var.getName() + "->" + Arrays.toString(values);
+    return var.getName();
   }
   
   @Override
