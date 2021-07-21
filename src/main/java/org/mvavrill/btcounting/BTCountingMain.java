@@ -12,16 +12,17 @@ public class BTCountingMain {
 
   public static void main(String[] args) {
     final Random random = new Random(97);
-    Pair<Model,IntVar[]> nqueens = generateQueens(5);
+    Pair<Model,IntVar[]> nqueens = generateQueens(15);
     Model model = nqueens.getValue0();
     IntVar[] vars = nqueens.getValue1();
     Solver solver = model.getSolver();
-    //solver.setSearch(new NaryRandomVarDom(vars, random));
-    GlobalMonitor monitor = new GlobalMonitor(solver, vars, 2, random);
+    GlobalMonitor monitor = new GlobalMonitor(solver, vars, 1, random, false);
     int i = 0;
     while (solver.solve()) {
-      System.out.println(i++);
+      System.out.println(i++ + " " + monitor.rootNode.nbSolutions);
     }
+    //monitor.rootNode.print();
+    System.out.println(i + " " + monitor.rootNode.nbSolutions);
   }
 
   public static Pair<Model,IntVar[]> generateQueens(final int n) {

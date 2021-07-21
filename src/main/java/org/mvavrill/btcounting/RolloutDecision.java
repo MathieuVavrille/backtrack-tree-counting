@@ -33,7 +33,7 @@ public class RolloutDecision extends Decision<IntVar> {
     if (branch >= 1) {
       int idToBranchOn = node.getIdToBranchOn();
       var.instantiateTo(node.varDomain[idToBranchOn], this);
-      System.out.println("branch " + branch + " " + var + "=" + node.varDomain[idToBranchOn]);
+      //System.out.println("branch " + branch + " " + var);
       monitor.goToChild(idToBranchOn);
     }
   }

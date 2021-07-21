@@ -10,7 +10,7 @@ class Node {
   private final Node parent;
   private boolean initDone = false;
   public long size = -1;
-  public long nbSolutions = 0;
+  public double nbSolutions = 0;
   public long unsearchedSpace = -1;
   public IntVar var = null;
   public int[] varDomain = null;
@@ -31,6 +31,7 @@ class Node {
 
   public void init(final IntVar[] vars) {
     size = spaceSize(vars);
+    unsearchedSpace = size;
     initDone = true;
   }
 
@@ -52,7 +53,6 @@ class Node {
     // Currently chooses first non instantiated variable
     int i = 0;
     while (vars[i].isInstantiated()) {
-      System.out.println(vars[i]);
       i++;
       if (i == vars.length)
         return;
@@ -96,7 +96,6 @@ class Node {
   }
 
   public int getNbSearchedNodes() {
-    this.print(0);
     return (int) Arrays.stream(nextNodes).filter(n -> n != null && n.unsearchedSpace != 0).count();
   }
 
@@ -109,7 +108,17 @@ class Node {
 
   private void updateData() { // Modify because rn the extrapolated number of solution is bs
     if (nextNodes != null) {
-      nbSolutions = Arrays.stream(nextNodes).mapToLong(node -> node.nbSolutions).sum();
+      double totalSolutions = 0;
+      int nbInitialized = 0;
+      for (final Node node : nextNodes) {
+        if (node.initDone) {
+          nbInitialized++;
+          totalSolutions += node.nbSolutions;
+        }
+      }
+      final double ts = totalSolutions;
+      final int ni = nbInitialized;
+      nbSolutions = Arrays.stream(nextNodes).mapToDouble(node -> (node.initDone) ? node.nbSolutions : ts/ni).sum();
       unsearchedSpace = Arrays.stream(nextNodes).mapToLong(node -> node.unsearchedSpace).sum();
     }
   }
